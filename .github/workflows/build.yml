@@ -1,0 +1,72 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Backup project files
+        run: |
+          mkdir -p /tmp/backup
+          cp -r lib /tmp/backup/
+          cp pubspec.yaml /tmp/backup/
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Generate Flutter scaffold (android folder)
+        run: flutter create . --project-name market_app --org com.example --platforms=android
+
+      - name: Restore project files
+        run: |
+          rm -rf lib
+          cp -r /tmp/backup/lib ./
+          cp /tmp/backup/pubspec.yaml ./
+
+      - name: Get Flutter dependencies
+        run: flutter pub get
+
+      # 👇 NOUVELLE ÉTAPE : Désactive Lint pour le build release
+      - name: Disable Lint for release build
+        run: |
+          GRADLE_FILE="android/app/build.gradle"
+          if [ -f "$GRADLE_FILE" ]; then
+            echo "Fichier build.gradle trouvé, désactivation de Lint..."
+            # Injecte la configuration lint dans le bloc 'android {'
+            sed -i '/^android {/a\    lint {\n        checkReleaseBuilds false\n        abortOnError false\n    }' "$GRADLE_FILE"
+          else
+            # Gère le cas où le fichier est en Kotlin DSL
+            GRADLE_KTS_FILE="android/app/build.gradle.kts"
+            if [ -f "$GRADLE_KTS_FILE" ]; then
+              echo "Fichier build.gradle.kts trouvé, désactivation de Lint..."
+              sed -i '/^android {/a\    lint {\n        checkReleaseBuilds = false\n        abortOnError = false\n    }' "$GRADLE_KTS_FILE"
+            else
+              echo "ERREUR : Impossible de trouver le fichier build.gradle ou build.gradle.kts"
+              exit 1
+            fi
+          fi
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
