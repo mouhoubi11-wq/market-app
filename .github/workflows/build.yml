@@ -42,10 +42,10 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # 👇 CORRECTION RENFORCÉE : Force compileSdk 36 pour TOUS les modules
+      # 👇 CORRECTION DÉFINITIVE : Force compileSdk 36 pour tous les sous-projets
       - name: Fix Android compileSdk for all modules
         run: |
-          # 1. Modifie le build.gradle du module "app"
+          # 1. Modifie le fichier build.gradle de l'application
           APP_GRADLE="android/app/build.gradle"
           if [ -f "$APP_GRADLE" ]; then
             sed -i 's/compileSdkVersion .*/compileSdkVersion 36/' "$APP_GRADLE"
@@ -56,22 +56,23 @@ jobs:
             sed -i 's/compileSdk = .*/compileSdk = 36/' "$APP_GRADLE_KTS"
           fi
 
-          # 2. Modifie le build.gradle RACINE pour forcer tous les sous-projets (plugins)
+          # 2. Modifie le fichier build.gradle RACINE pour forcer les sous-projets
           ROOT_GRADLE="android/build.gradle"
           if [ -f "$ROOT_GRADLE" ]; then
-            # Ajoute un bloc subprojects qui force compileSdk à 36
-            cat >> "$ROOT_GRADLE" <<'EOF'
-
-          subprojects {
-              afterEvaluate { project ->
-                  if (project.plugins.hasPlugin("com.android.application") || project.plugins.hasPlugin("com.android.library")) {
-                      project.android {
-                          compileSdkVersion 36
-                      }
-                  }
-              }
-          }
-          EOF
+            # Supprime l'ancien bloc subprojects s'il existe pour éviter les doublons
+            sed -i '/subprojects {/,/^}/d' "$ROOT_GRADLE"
+            # Ajoute le nouveau bloc corrigé à la fin du fichier
+            echo "" >> "$ROOT_GRADLE"
+            echo "subprojects {" >> "$ROOT_GRADLE"
+            echo "    afterEvaluate { project ->" >> "$ROOT_GRADLE"
+            echo "        if (project.plugins.hasPlugin('com.android.application') || project.plugins.hasPlugin('com.android.library')) {" >> "$ROOT_GRADLE"
+            echo "            project.android {" >> "$ROOT_GRADLE"
+            echo "                compileSdkVersion 36" >> "$ROOT_GRADLE"
+            echo "                buildToolsVersion '36.0.0'" >> "$ROOT_GRADLE"
+            echo "            }" >> "$ROOT_GRADLE"
+            echo "        }" >> "$ROOT_GRADLE"
+            echo "    }" >> "$ROOT_GRADLE"
+            echo "}" >> "$ROOT_GRADLE"
           fi
 
       - name: Disable Lint for release build
