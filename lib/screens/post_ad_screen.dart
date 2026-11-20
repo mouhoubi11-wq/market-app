@@ -136,10 +136,10 @@ class _PostAdScreenState extends State<PostAdScreen> {
                 gradient: const LinearGradient(colors: [Color(0xFFFF6B35), Color(0xFFFF3D71)]),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Row(
-                children: [
-                  Text('âœ¨', style: TextStyle(fontSize: 28)),
-                  SizedBox(width: 12),
+                         child: const Row(
+             children: [
+               Icon(Icons.auto_awesome, color: Colors.white, size: 28),
+               SizedBox(width: 12),
                   Expanded(
                     child: Text('Bonne vente !\nRemplissez les champs pour publier.',
                         style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500, height: 1.4)),
