@@ -42,31 +42,23 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # 👇 CORRECTION DÉFINITIVE : Force compileSdk 36 et Java 17 pour TOUS les sous-projets
+      # 👇 CORRECTION : Force compileSdk 36 pour TOUS les sous-projets
       - name: Fix Android compileSdk for all modules
         run: |
           ROOT_GRADLE="android/build.gradle"
           if [ -f "$ROOT_GRADLE" ]; then
-            echo "" >> "$ROOT_GRADLE"
-            echo "subprojects {" >> "$ROOT_GRADLE"
-            echo "    afterEvaluate { project ->" >> "$ROOT_GRADLE"
-            echo "        if (project.hasProperty('android')) {" >> "$ROOT_GRADLE"
-            echo "            project.android {" >> "$ROOT_GRADLE"
-            echo "                compileSdkVersion 36" >> "$ROOT_GRADLE"
-            echo "                compileOptions {" >> "$ROOT_GRADLE"
-            echo "                    sourceCompatibility JavaVersion.VERSION_17" >> "$ROOT_GRADLE"
-            echo "                    targetCompatibility JavaVersion.VERSION_17" >> "$ROOT_GRADLE"
-            echo "                }" >> "$ROOT_GRADLE"
-            echo "            }" >> "$ROOT_GRADLE"
-            echo "        }" >> "$ROOT_GRADLE"
-            echo "        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {" >> "$ROOT_GRADLE"
-            echo "            kotlinOptions {" >> "$ROOT_GRADLE"
-            echo "                jvmTarget = JavaVersion.VERSION_17.toString()" >> "$ROOT_GRADLE"
-            echo "            }" >> "$ROOT_GRADLE"
-            echo "        }" >> "$ROOT_GRADLE"
-            echo "    }" >> "$ROOT_GRADLE"
-            echo "}" >> "$ROOT_GRADLE"
-            echo "subprojects { project.evaluationDependsOn(':app') }" >> "$ROOT_GRADLE"
+            cat >> "$ROOT_GRADLE" <<'EOF'
+
+          subprojects {
+              afterEvaluate { project ->
+                  if (project.plugins.hasPlugin("com.android.application") || project.plugins.hasPlugin("com.android.library")) {
+                      project.android {
+                          compileSdkVersion 36
+                      }
+                  }
+              }
+          }
+          EOF
           fi
 
       - name: Disable Lint for release build
