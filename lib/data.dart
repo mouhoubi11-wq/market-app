@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class Category {
   final String id;
@@ -14,16 +14,16 @@ class Category {
 }
 
 const List<Category> kCategories = [
-  Category(id: 'vehicules',    name: 'Vehicules',        icon: 'ðŸš—', color: Color(0xFFE63946)),
-  Category(id: 'immobilier',   name: 'Immobilier',       icon: 'ðŸ ', color: Color(0xFF457B9D)),
-  Category(id: 'electronique', name: 'Electronique',     icon: 'ðŸ“±', color: Color(0xFF7B2CBF)),
-  Category(id: 'maison',       name: 'Maison & Jardin',  icon: 'ðŸ›‹ï¸', color: Color(0xFF2A9D8F)),
-  Category(id: 'mode',         name: 'Mode',             icon: 'ðŸ‘•', color: Color(0xFFE91E63)),
-  Category(id: 'emploi',       name: 'Emploi',           icon: 'ðŸ’¼', color: Color(0xFFF77F00)),
-  Category(id: 'services',     name: 'Services',         icon: 'ðŸ”§', color: Color(0xFF00B4D8)),
-  Category(id: 'loisirs',      name: 'Loisirs',          icon: 'ðŸŽ®', color: Color(0xFFFCA311)),
-  Category(id: 'bebe',         name: 'Bebe & Enfant',    icon: 'ðŸ‘¶', color: Color(0xFFFF7EB3)),
-  Category(id: 'animaux',      name: 'Animaux',          icon: 'ðŸ¾', color: Color(0xFFA68A64)),
+  Category(id: 'vehicules',    name: 'Véhicules',        icon: '🚗', color: Color(0xFFE63946)),
+  Category(id: 'immobilier',   name: 'Immobilier',       icon: '🏠', color: Color(0xFF457B9D)),
+  Category(id: 'electronique', name: 'Électronique',     icon: '📱', color: Color(0xFF7B2CBF)),
+  Category(id: 'maison',       name: 'Maison & Jardin',  icon: '🛋️', color: Color(0xFF2A9D8F)),
+  Category(id: 'mode',         name: 'Mode',             icon: '👕', color: Color(0xFFE91E63)),
+  Category(id: 'emploi',       name: 'Emploi',           icon: '💼', color: Color(0xFFF77F00)),
+  Category(id: 'services',     name: 'Services',         icon: '🔧', color: Color(0xFF00B4D8)),
+  Category(id: 'loisirs',      name: 'Loisirs',          icon: '🎮', color: Color(0xFFFCA311)),
+  Category(id: 'bebe',         name: 'Bébé & Enfant',    icon: '👶', color: Color(0xFFFF7EB3)),
+  Category(id: 'animaux',      name: 'Animaux',          icon: '🐾', color: Color(0xFFA68A64)),
 ];
 
 Category categoryById(String id) =>
