@@ -31,8 +31,6 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # Installe le NDK avant Gradle, avec 3 tentatives, pour éviter
-      # un téléchargement coupé pendant "flutter build apk".
       - name: Install Android NDK (avec nouvelle tentative)
         run: |
           for i in 1 2 3; do
@@ -57,28 +55,19 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # Force compileSdk 36 pour TOUS les sous-projets
-      # (ignoré si android/build.gradle n'existe pas, ex. Flutter récent en .kts)
-      - name: Fix Android compileSdk for all modules
+      # Force compileSdk 36 sur tous les plugins Android (marche avec .gradle ET .gradle.kts)
+      - name: Force compileSdk 36 for all plugins (Gradle init script)
         run: |
-          ROOT_GRADLE="android/build.gradle"
-          if [ -f "$ROOT_GRADLE" ]; then
-            cat >> "$ROOT_GRADLE" <<'EOF'
-
-          subprojects {
+          mkdir -p ~/.gradle/init.d
+          cat > ~/.gradle/init.d/force-compilesdk.gradle <<'EOF'
+          allprojects {
               afterEvaluate { project ->
-                  if (project.plugins.hasPlugin("com.android.application") || project.plugins.hasPlugin("com.android.library")) {
-                      project.android {
-                          compileSdkVersion 36
-                      }
+                  if (project.plugins.hasPlugin("com.android.library")) {
+                      project.android.compileSdk = 36
                   }
               }
           }
           EOF
-          else
-            echo "android/build.gradle introuvable : étape ignorée"
-            ls android
-          fi
 
       - name: Disable Lint for release build
         run: |
@@ -87,7 +76,6 @@ jobs:
             sed -i '/^android {/a\    lint {\n        checkReleaseBuilds false\n        abortOnError false\n    }' "$GRADLE_FILE"
           else
             echo "android/app/build.gradle introuvable : étape ignorée"
-            ls android/app
           fi
 
       - name: Build release APK
