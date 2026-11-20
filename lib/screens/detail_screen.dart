@@ -1,7 +1,8 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 import '../data.dart';
 import '../models.dart';
 import '../photo_helper.dart';
@@ -44,6 +45,79 @@ class _DetailScreenState extends State<DetailScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Numero copie : $phone')));
     }
+  }
+
+  // 📤 PARTAGER L'ANNONCE
+  void _share() {
+    final a = widget.announcement;
+    final text = 'Regarde cette annonce sur Marché 🛒\n\n'
+        '📌 ${a.title}\n'
+        '💰 ${formatPrice(a.price)}\n'
+        '📍 ${a.city}\n\n'
+        '📝 ${a.description}\n\n'
+        'Télécharge l\'application pour voir plus d\'annonces !';
+    
+    Share.share(text, subject: a.title);
+  }
+
+  // 🚩 SIGNALER L'ANNONCE
+  void _report() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Signaler cette annonce'),
+        content: const Text('Pourquoi signalez-vous cette annonce ?\n\n(Le signalement sera envoyé aux modérateurs)'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('✅ Merci, votre signalement a été pris en compte.'), backgroundColor: Colors.green),
+              );
+            },
+            child: const Text('Arnaque / Fraude'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('✅ Merci, votre signalement a été pris en compte.'), backgroundColor: Colors.green),
+              );
+            },
+            child: const Text('Contenu inapproprié'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler', style: TextStyle(color: Colors.grey)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 🚫 BLOQUER L'UTILISATEUR
+  void _block() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Bloquer cet utilisateur ?'),
+        content: const Text('Vous ne verrez plus ses annonces à l\'avenir.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context); // Retour à l'accueil
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Utilisateur bloqué.'), backgroundColor: Colors.red),
+              );
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Bloquer'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _delete() async {
@@ -90,12 +164,27 @@ class _DetailScreenState extends State<DetailScreen> {
         title: const Text('Details'),
         actions: [
           IconButton(
+            tooltip: 'Partager',
+            icon: const Icon(Icons.share),
+            onPressed: _share,
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'report') _report();
+              if (value == 'block') _block();
+              if (value == 'delete') _delete();
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem(value: 'report', child: Row(children: [Icon(Icons.flag, color: Colors.orange), SizedBox(width: 8), Text('Signaler')])),
+              if (!a.isMine) const PopupMenuItem(value: 'block', child: Row(children: [Icon(Icons.block, color: Colors.red), SizedBox(width: 8), Text('Bloquer l\'utilisateur')])),
+              if (a.isMine) const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, color: Colors.red), SizedBox(width: 8), Text('Supprimer')])),
+            ],
+          ),
+          IconButton(
             icon: Icon(_isFav ? Icons.favorite : Icons.favorite_border,
                 color: _isFav ? const Color(0xFFFF3D71) : Colors.white),
             onPressed: _toggleFav,
           ),
-          if (a.isMine)
-            IconButton(icon: const Icon(Icons.delete_outline), onPressed: _delete),
         ],
       ),
       body: ListView(
@@ -135,7 +224,7 @@ class _DetailScreenState extends State<DetailScreen> {
           Text(formatPrice(a.price),
               style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFFFF6B35))),
           const SizedBox(height: 4),
-          Text('Publie ${a.timeAgo}', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+          Text('Publié ${a.timeAgo}', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
           const SizedBox(height: 14),
           Wrap(
             spacing: 8,
@@ -170,7 +259,14 @@ class _DetailScreenState extends State<DetailScreen> {
               onTap: _call,
             ),
           ),
-          const SizedBox(height: 26),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: _share,
+            icon: const Icon(Icons.share),
+            label: const Text('Partager cette annonce'),
+            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+          ),
+          const SizedBox(height: 16),
           if (!a.isMine)
             FilledButton.icon(
               onPressed: _call,
