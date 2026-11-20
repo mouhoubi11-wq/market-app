@@ -55,28 +55,26 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # Force compileSdk 36 sur tous les plugins Android (marche avec .gradle ET .gradle.kts)
-      - name: Force compileSdk 36 for all plugins (Gradle init script)
+      # Script Gradle d'initialisation (marche avec .gradle ET .gradle.kts) :
+      # 1) force compileSdk 36 sur tous les plugins Android
+      # 2) désactive Android Lint "vital" qui plante pendant le build release
+      - name: Gradle init script (compileSdk + désactiver lint)
         run: |
           mkdir -p ~/.gradle/init.d
-          cat > ~/.gradle/init.d/force-compilesdk.gradle <<'EOF'
+          cat > ~/.gradle/init.d/fix-build.gradle <<'EOF'
           allprojects {
               afterEvaluate { project ->
                   if (project.plugins.hasPlugin("com.android.library")) {
                       project.android.compileSdk = 36
                   }
               }
+              tasks.configureEach { task ->
+                  if (task.name.startsWith("lintVital")) {
+                      task.enabled = false
+                  }
+              }
           }
           EOF
-
-      - name: Disable Lint for release build
-        run: |
-          GRADLE_FILE="android/app/build.gradle"
-          if [ -f "$GRADLE_FILE" ]; then
-            sed -i '/^android {/a\    lint {\n        checkReleaseBuilds false\n        abortOnError false\n    }' "$GRADLE_FILE"
-          else
-            echo "android/app/build.gradle introuvable : étape ignorée"
-          fi
 
       - name: Build release APK
         run: flutter build apk --release
