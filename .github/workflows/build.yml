@@ -42,21 +42,37 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # 👇 LA CORRECTION EST ICI : on passe à compileSdk 36
-      - name: Fix Android compileSdk
+      # 👇 CORRECTION RENFORCÉE : Force compileSdk 36 pour TOUS les modules
+      - name: Fix Android compileSdk for all modules
         run: |
-          GRADLE_FILE="android/app/build.gradle"
-          GRADLE_KTS_FILE="android/app/build.gradle.kts"
-          if [ -f "$GRADLE_FILE" ]; then
-            echo "Mise a jour de build.gradle..."
-            sed -i 's/compileSdkVersion .*/compileSdkVersion 36/' "$GRADLE_FILE"
-            sed -i 's/compileSdk .*/compileSdk 36/' "$GRADLE_FILE"
-          elif [ -f "$GRADLE_KTS_FILE" ]; then
-            echo "Mise a jour de build.gradle.kts..."
-            sed -i 's/compileSdk = .*/compileSdk = 36/' "$GRADLE_KTS_FILE"
+          # 1. Modifie le build.gradle du module "app"
+          APP_GRADLE="android/app/build.gradle"
+          if [ -f "$APP_GRADLE" ]; then
+            sed -i 's/compileSdkVersion .*/compileSdkVersion 36/' "$APP_GRADLE"
+            sed -i 's/compileSdk .*/compileSdk 36/' "$APP_GRADLE"
           fi
-          echo "--- Verification du compileSdk ---"
-          grep -r "compileSdk" android/app/ || true
+          APP_GRADLE_KTS="android/app/build.gradle.kts"
+          if [ -f "$APP_GRADLE_KTS" ]; then
+            sed -i 's/compileSdk = .*/compileSdk = 36/' "$APP_GRADLE_KTS"
+          fi
+
+          # 2. Modifie le build.gradle RACINE pour forcer tous les sous-projets (plugins)
+          ROOT_GRADLE="android/build.gradle"
+          if [ -f "$ROOT_GRADLE" ]; then
+            # Ajoute un bloc subprojects qui force compileSdk à 36
+            cat >> "$ROOT_GRADLE" <<'EOF'
+
+          subprojects {
+              afterEvaluate { project ->
+                  if (project.plugins.hasPlugin("com.android.application") || project.plugins.hasPlugin("com.android.library")) {
+                      project.android {
+                          compileSdkVersion 36
+                      }
+                  }
+              }
+          }
+          EOF
+          fi
 
       - name: Disable Lint for release build
         run: |
