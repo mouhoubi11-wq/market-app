@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,6 +31,20 @@ jobs:
           channel: 'stable'
           cache: true
 
+      # Installe le NDK avant Gradle, avec 3 tentatives, pour éviter
+      # un téléchargement coupé pendant "flutter build apk".
+      - name: Install Android NDK (avec nouvelle tentative)
+        run: |
+          for i in 1 2 3; do
+            if yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.2.13676358"; then
+              exit 0
+            fi
+            echo "Tentative $i échouée, nouvelle tentative dans 15 s..."
+            sleep 15
+          done
+          echo "Impossible d'installer le NDK après 3 tentatives"
+          exit 1
+
       - name: Generate Flutter scaffold (android folder)
         run: flutter create . --project-name market_app --org com.example --platforms=android
 
@@ -42,7 +57,8 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # 👇 CORRECTION : Force compileSdk 36 pour TOUS les sous-projets
+      # Force compileSdk 36 pour TOUS les sous-projets
+      # (ignoré si android/build.gradle n'existe pas, ex. Flutter récent en .kts)
       - name: Fix Android compileSdk for all modules
         run: |
           ROOT_GRADLE="android/build.gradle"
@@ -59,6 +75,9 @@ jobs:
               }
           }
           EOF
+          else
+            echo "android/build.gradle introuvable : étape ignorée"
+            ls android
           fi
 
       - name: Disable Lint for release build
@@ -66,6 +85,9 @@ jobs:
           GRADLE_FILE="android/app/build.gradle"
           if [ -f "$GRADLE_FILE" ]; then
             sed -i '/^android {/a\    lint {\n        checkReleaseBuilds false\n        abortOnError false\n    }' "$GRADLE_FILE"
+          else
+            echo "android/app/build.gradle introuvable : étape ignorée"
+            ls android/app
           fi
 
       - name: Build release APK
