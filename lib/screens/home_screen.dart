@@ -162,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(10),
             ),
             alignment: Alignment.center,
-            child: const Text('ðŸ›’', style: TextStyle(fontSize: 20)),
+            child: const Text('🛒', style: TextStyle(fontSize: 20)),
           ),
           const SizedBox(width: 10),
           const Text('Marche', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
