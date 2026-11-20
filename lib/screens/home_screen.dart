@@ -226,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   children: [
-                    _categoryChip(id: null, icon: 'ðŸŒˆ', label: 'Tout', color: Colors.white),
+                   _categoryChip(id: null, icon: '🌈', label: 'Tout', color: Colors.white),
                     ...kCategories.map((c) => _categoryChip(id: c.id, icon: c.icon, label: c.name, color: c.color)),
                   ],
                 ),
