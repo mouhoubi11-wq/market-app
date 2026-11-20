@@ -1,4 +1,4 @@
-﻿name: market_app
+name: market_app
 description: Application de petites annonces achat/vente
 publish_to: 'none'
 version: 1.0.0+1
@@ -13,6 +13,7 @@ dependencies:
   url_launcher: ^6.2.5
   image_picker: ^1.0.7
   path_provider: ^2.1.2
+  share_plus: ^7.2.2
   cupertino_icons: ^1.0.6
 
 flutter:
