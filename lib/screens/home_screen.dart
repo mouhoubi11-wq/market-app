@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../data.dart';
 import '../models.dart';
@@ -88,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _load();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(wasFav ? 'Retire des favoris' : 'Ajoute aux favoris'),
+        content: Text(wasFav ? '💔 Retiré des favoris' : '❤️ Ajouté aux favoris'),
         duration: const Duration(milliseconds: 1200),
       ));
     }
@@ -102,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         setState(() => _tab = 2);
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Annonce publiee avec succes !'),
+          content: Text('✅ Annonce publiée avec succès !'),
           backgroundColor: Color(0xFF2A9D8F),
         ));
       }
@@ -149,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     if (_tab != 0) {
-      return AppBar(title: Text(_tab == 1 ? 'Mes favoris' : 'Mes annonces'));
+      return AppBar(title: Text(_tab == 1 ? '❤️ Mes favoris' : '📋 Mes annonces'));
     }
 
     return AppBar(
@@ -165,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: const Text('🛒', style: TextStyle(fontSize: 20)),
           ),
           const SizedBox(width: 10),
-          const Text('Marche', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          const Text('Marché', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
         ],
       ),
       actions: [
@@ -176,9 +176,9 @@ class _HomeScreenState extends State<HomeScreen> {
           color: Colors.white,
           onSelected: (s) => setState(() => _sort = s),
           itemBuilder: (_) => const [
-            PopupMenuItem(value: SortMode.recent, child: Text('Plus recentes')),
-            PopupMenuItem(value: SortMode.priceAsc, child: Text('Prix croissant')),
-            PopupMenuItem(value: SortMode.priceDesc, child: Text('Prix decroissant')),
+            PopupMenuItem(value: SortMode.recent, child: Text('📅 Plus récentes')),
+            PopupMenuItem(value: SortMode.priceAsc, child: Text('💰 Prix croissant')),
+            PopupMenuItem(value: SortMode.priceDesc, child: Text('💎 Prix décroissant')),
           ],
         ),
       ],
@@ -226,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   children: [
-                   _categoryChip(id: null, icon: '🌈', label: 'Tout', color: Colors.white),
+                    _categoryChip(id: null, icon: '🌈', label: 'Tout', color: Colors.white),
                     ...kCategories.map((c) => _categoryChip(id: c.id, icon: c.icon, label: c.name, color: c.color)),
                   ],
                 ),
@@ -273,8 +273,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       showSelectedIcon: false,
                       segments: const [
                         ButtonSegment(value: 'all', label: Text('Tout')),
-                        ButtonSegment(value: 'vente', label: Text('Vente')),
-                        ButtonSegment(value: 'achat', label: Text('Achat')),
+                        ButtonSegment(value: 'vente', label: Text('🟢 Vente')),
+                        ButtonSegment(value: 'achat', label: Text('🔵 Achat')),
                       ],
                       selected: {_type ?? 'all'},
                       onSelectionChanged: (s) => setState(() => _type = s.first == 'all' ? null : s.first),
@@ -292,12 +292,12 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: _buildList(_homeList,
                   emptyIcon: Icons.search_off,
-                  emptyMsg: 'Aucune annonce trouvee',
+                  emptyMsg: 'Aucune annonce trouvée',
                   emptyAction: _hasActiveFilters
                       ? TextButton.icon(
                           onPressed: _clearFilters,
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Reinitialiser les filtres'))
+                          label: const Text('Réinitialiser les filtres'))
                       : null),
             ),
           ],
@@ -309,15 +309,15 @@ class _HomeScreenState extends State<HomeScreen> {
             emptyAction: FilledButton.icon(
                 onPressed: () => setState(() => _tab = 0),
                 icon: const Icon(Icons.explore),
-                label: const Text('Decouvrir des annonces')));
+                label: const Text('Découvrir des annonces')));
       default:
         return _buildList(_mineList,
             emptyIcon: Icons.inbox_outlined,
-            emptyMsg: 'Vous n avez publie aucune annonce',
+            emptyMsg: 'Vous n\'avez publié aucune annonce',
             emptyAction: FilledButton.icon(
                 onPressed: _openPost,
                 icon: const Icon(Icons.add),
-                label: const Text('Publier ma premiere annonce')));
+                label: const Text('Publier ma première annonce')));
     }
   }
 
