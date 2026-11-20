@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -26,6 +26,7 @@ class _PostAdScreenState extends State<PostAdScreen> {
   String _categoryId = kCategories.first.id;
   String _type = 'vente';
   bool _saving = false;
+  bool _acceptTerms = false;
   static const _maxPhotos = 5;
 
   @override
@@ -136,10 +137,10 @@ class _PostAdScreenState extends State<PostAdScreen> {
                 gradient: const LinearGradient(colors: [Color(0xFFFF6B35), Color(0xFFFF3D71)]),
                 borderRadius: BorderRadius.circular(16),
               ),
-                         child: const Row(
-             children: [
-               Icon(Icons.auto_awesome, color: Colors.white, size: 28),
-               SizedBox(width: 12),
+              child: const Row(
+                children: [
+                  Icon(Icons.auto_awesome, color: Colors.white, size: 28),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Text('Bonne vente !\nRemplissez les champs pour publier.',
                         style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500, height: 1.4)),
@@ -218,8 +219,20 @@ class _PostAdScreenState extends State<PostAdScreen> {
               validator: (v) => (v == null || v.trim().length < 10) ? 'Description trop courte (10 caract. min)' : null,
             ),
             const SizedBox(height: 16),
+            CheckboxListTile(
+              value: _acceptTerms,
+              onChanged: (val) => setState(() => _acceptTerms = val ?? false),
+              title: const Text(
+                "J'accepte les conditions d'utilisation et je certifie que mon annonce est légale.",
+                style: TextStyle(fontSize: 13),
+              ),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+              activeColor: const Color(0xFFFF6B35),
+            ),
+            const SizedBox(height: 8),
             FilledButton.icon(
-              onPressed: _saving ? null : _submit,
+              onPressed: (_saving || !_acceptTerms) ? null : _submit,
               icon: _saving
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.check),
