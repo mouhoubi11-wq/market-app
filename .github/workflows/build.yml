@@ -2,85 +2,67 @@ name: Build APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Backup project files
-        run: |
-          mkdir -p /tmp/backup
-          cp -r lib /tmp/backup/
-          cp pubspec.yaml /tmp/backup/
-
-      - name: Setup Java
-        uses: actions/setup-java@v5
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: temurin
           java-version: '17'
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      # Dernière version stable de Flutter (le thème de l'appli demande Flutter 3.27 ou plus).
+      - uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
           cache: true
 
-      - name: Install Android NDK (avec nouvelle tentative)
+      - run: flutter --version
+
+      # Si le dossier android/ n'est pas dans le dépôt, on le génère.
+      - name: Créer le dossier android si absent
         run: |
-          for i in 1 2 3; do
-            if yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.2.13676358"; then
-              exit 0
-            fi
-            echo "Tentative $i échouée, nouvelle tentative dans 15 s..."
-            sleep 15
-          done
-          echo "Impossible d'installer le NDK après 3 tentatives"
-          exit 1
+          if [ ! -d android ]; then
+            flutter create --platforms=android --project-name market_app --org com.marche .
+          fi
 
-      - name: Generate Flutter scaffold (android folder)
-        run: flutter create . --project-name market_app --org com.example --platforms=android
-
-      - name: Restore project files
+      # Sans la permission INTERNET dans le manifeste, l'APK final n'a AUCUN accès au réseau.
+      # Cette étape l'ajoute (et la requête « tel: » pour le bouton Appeler) si elles manquent.
+      - name: Autoriser Internet dans le manifeste Android
         run: |
-          rm -rf lib
-          cp -r /tmp/backup/lib ./
-          cp /tmp/backup/pubspec.yaml ./
+          python3 - <<'PY'
+          import re
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p, encoding='utf-8').read()
+          if 'android.permission.INTERNET' not in s:
+              s = re.sub(r'(<manifest[^>]*>)',
+                         r'\1\n    <uses-permission android:name="android.permission.INTERNET"/>',
+                         s, count=1)
+          if 'android:scheme="tel"' not in s:
+              intent = ('        <intent>\n'
+                        '            <action android:name="android.intent.action.VIEW"/>\n'
+                        '            <data android:scheme="tel"/>\n'
+                        '        </intent>\n')
+              if '</queries>' in s:
+                  s = s.replace('</queries>', intent + '    </queries>', 1)
+              else:
+                  s = s.replace('</manifest>',
+                                '    <queries>\n' + intent + '    </queries>\n</manifest>', 1)
+          s = s.replace('android:label="market_app"', 'android:label="Marché"')
+          open(p, 'w', encoding='utf-8').write(s)
+          PY
+          grep -n "INTERNET" android/app/src/main/AndroidManifest.xml
 
-      - name: Get Flutter dependencies
-        run: flutter pub get
+      - run: flutter pub get
 
-      # Script Gradle d'initialisation (marche avec .gradle ET .gradle.kts) :
-      # 1) force compileSdk 36 sur tous les plugins Android
-      # 2) désactive Android Lint "vital" qui plante pendant le build release
-      - name: Gradle init script (compileSdk + désactiver lint)
-        run: |
-          mkdir -p ~/.gradle/init.d
-          cat > ~/.gradle/init.d/fix-build.gradle <<'EOF'
-          allprojects {
-              afterEvaluate { project ->
-                  if (project.plugins.hasPlugin("com.android.library")) {
-                      project.android.compileSdk = 36
-                  }
-              }
-              tasks.configureEach { task ->
-                  if (task.name.startsWith("lintVital")) {
-                      task.enabled = false
-                  }
-              }
-          }
-          EOF
+      - run: flutter build apk --release
 
-      - name: Build release APK
-        run: flutter build apk --release
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: marche-apk
           path: build/app/outputs/flutter-apk/app-release.apk
