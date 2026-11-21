@@ -1,7 +1,55 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'config.dart';
+import 'repository.dart';
 import 'screens/home_screen.dart';
 
-void main() => runApp(const MarketApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final configured =
+      !kSupabaseUrl.contains('VOTRE') && !kSupabaseAnonKey.contains('VOTRE');
+  if (!configured) {
+    runApp(const _ConfigErrorApp(
+        'Remplis kSupabaseUrl et kSupabaseAnonKey dans lib/config.dart.'));
+    return;
+  }
+
+  try {
+    await Supabase.initialize(url: kSupabaseUrl, anonKey: kSupabaseAnonKey);
+  } catch (e) {
+    runApp(_ConfigErrorApp('Initialisation impossible : $e'));
+    return;
+  }
+
+  // Connexion anonyme en arrière-plan. Si le téléphone est hors ligne au tout
+  // premier lancement, elle sera retentée automatiquement à la première action.
+  AnnouncementRepository.ensureSignedIn().catchError((_) {});
+
+  runApp(const MarketApp());
+}
+
+class _ConfigErrorApp extends StatelessWidget {
+  final String message;
+  const _ConfigErrorApp(this.message);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text('Configuration manquante\n\n$message',
+                textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class MarketApp extends StatelessWidget {
   const MarketApp({super.key});
@@ -28,7 +76,7 @@ class MarketApp extends StatelessWidget {
     );
 
     return MaterialApp(
-      title: 'Marche',
+      title: 'Marché',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

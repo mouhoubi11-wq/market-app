@@ -13,6 +13,8 @@ class Category {
   });
 }
 
+// ATTENTION : si tu ajoutes ou renommes une catégorie ici, fais la même chose
+// dans la contrainte "category_id" du fichier supabase/setup.sql (côté serveur).
 const List<Category> kCategories = [
   Category(id: 'vehicules',    name: 'Véhicules',        icon: '🚗', color: Color(0xFFE63946)),
   Category(id: 'immobilier',   name: 'Immobilier',       icon: '🏠', color: Color(0xFF457B9D)),
