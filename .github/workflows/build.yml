@@ -14,9 +14,8 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
 
-      # Dernière version stable de Flutter (le thème de l'appli demande Flutter 3.27 ou plus).
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -24,43 +23,72 @@ jobs:
 
       - run: flutter --version
 
-      # Si le dossier android/ n'est pas dans le dépôt, on le génère.
       - name: Créer le dossier android si absent
         run: |
           if [ ! -d android ]; then
             flutter create --platforms=android --project-name market_app --org com.marche .
           fi
 
-      # Sans la permission INTERNET dans le manifeste, l'APK final n'a AUCUN accès au réseau.
-      # Cette étape l'ajoute (et la requête « tel: » pour le bouton Appeler) si elles manquent.
-      - name: Autoriser Internet dans le manifeste Android
+      - name: Ajouter permission INTERNET (vérification stricte)
         run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          echo "=== AVANT ==="
+          cat "$MANIFEST"
+
           python3 - <<'PY'
-          import re
           p = 'android/app/src/main/AndroidManifest.xml'
           s = open(p, encoding='utf-8').read()
-          if 'android.permission.INTERNET' not in s:
-              s = re.sub(r'(<manifest[^>]*>)',
-                         r'\1\n    <uses-permission android:name="android.permission.INTERNET"/>',
-                         s, count=1)
-          if 'android:scheme="tel"' not in s:
-              intent = ('        <intent>\n'
-                        '            <action android:name="android.intent.action.VIEW"/>\n'
-                        '            <data android:scheme="tel"/>\n'
-                        '        </intent>\n')
-              if '</queries>' in s:
-                  s = s.replace('</queries>', intent + '    </queries>', 1)
-              else:
-                  s = s.replace('</manifest>',
-                                '    <queries>\n' + intent + '    </queries>\n</manifest>', 1)
+
+          # Supprimer toute permission INTERNET existante pour repartir propre
+          import re
+          s = re.sub(r'<uses-permission android:name="android.permission.INTERNET"\s*/>', '', s)
+          s = re.sub(r'<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\s*/>', '', s)
+
+          # Insérer les permissions juste avant <application
+          perms = (
+              '    <uses-permission android:name="android.permission.INTERNET"/>\n'
+              '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>\n'
+          )
+          s = s.replace('<application', perms + '    <application', 1)
+
+          # Cleartext HTTP (au cas où l'API n'est pas en HTTPS)
+          if 'usesCleartextTraffic' not in s:
+              s = s.replace('<application',
+                            '<application android:usesCleartextTraffic="true"',
+                            1)
+
+          # Nom de l'appli
           s = s.replace('android:label="market_app"', 'android:label="Marché"')
+
           open(p, 'w', encoding='utf-8').write(s)
+          print("✅ Manifest modifié.")
           PY
-          grep -n "INTERNET" android/app/src/main/AndroidManifest.xml
+
+          echo "=== APRÈS ==="
+          cat "$MANIFEST"
+
+          echo "=== VÉRIFICATION ==="
+          if grep -q 'android.permission.INTERNET' "$MANIFEST"; then
+            echo "✅ Permission INTERNET présente dans le manifeste source."
+          else
+            echo "❌ Permission INTERNET ABSENTE !"
+            exit 1
+          fi
 
       - run: flutter pub get
 
       - run: flutter build apk --release
+
+      - name: Vérifier permission INTERNET dans l'APK compilé
+        run: |
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          echo "=== Permissions dans l'APK compilé ==="
+          if unzip -p "$APK" AndroidManifest.xml | strings | grep -q "android.permission.INTERNET"; then
+            echo "✅ CONFIRMÉ : INTERNET est bien dans l'APK final."
+          else
+            echo "❌ INTERNET ABSENT de l'APK final — le problème vient de Gradle !"
+            exit 1
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
