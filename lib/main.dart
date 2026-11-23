@@ -23,8 +23,6 @@ Future<void> main() async {
     return;
   }
 
-  // Connexion anonyme en arrière-plan. Si le téléphone est hors ligne au tout
-  // premier lancement, elle sera retentée automatiquement à la première action.
   AnnouncementRepository.ensureSignedIn().catchError((_) {});
 
   runApp(const MarketApp());
@@ -76,7 +74,7 @@ class MarketApp extends StatelessWidget {
     );
 
     return MaterialApp(
-      title: 'Marché',
+      title: 'VENDORA', // <-- NOM CHANGÉ ICI
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
