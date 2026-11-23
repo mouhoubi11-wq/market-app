@@ -20,7 +20,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final _scrollCtrl = ScrollController();
   Timer? _debounce;
 
-  // Onglet Accueil (chargé page par page depuis le serveur)
   List<Announcement> _ads = [];
   int _page = 0;
   bool _hasMore = false;
@@ -30,7 +29,6 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _error;
   int _reqId = 0;
 
-  // Onglets Favoris et Mes annonces
   List<Announcement> _favAds = [];
   List<Announcement> _mineAds = [];
   bool _favLoading = false;
@@ -73,9 +71,6 @@ class _HomeScreenState extends State<HomeScreen> {
         SnackBar(content: Text(msg), backgroundColor: color));
   }
 
-  // ------------------------------------------------------------------
-  //  Chargement de l'accueil
-  // ------------------------------------------------------------------
   Future<void> _reload({bool keepOnError = false}) async {
     final id = ++_reqId;
     if (!keepOnError && _scrollCtrl.hasClients) _scrollCtrl.jumpTo(0);
@@ -157,8 +152,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (pos.pixels >= pos.maxScrollExtent - 400) _loadMore();
   }
 
-  /// Si la liste est trop courte pour défiler (annonces masquées par un blocage),
-  /// on charge la page suivante sans attendre un défilement.
   void _scheduleFillCheck() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _tab != 0 || !_scrollCtrl.hasClients) return;
@@ -227,9 +220,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (i == 2) _loadMine();
   }
 
-  // ------------------------------------------------------------------
-  //  Filtres
-  // ------------------------------------------------------------------
   bool get _hasActiveFilters =>
       _searchCtrl.text.isNotEmpty || _categoryId != null || _type != null;
 
@@ -254,9 +244,6 @@ class _HomeScreenState extends State<HomeScreen> {
       .where((a) => _favorites.contains(a.id) && !_blocked.contains(a.ownerId))
       .toList();
 
-  // ------------------------------------------------------------------
-  //  Actions
-  // ------------------------------------------------------------------
   Future<void> _toggleFav(String id) async {
     final wasFav = _favorites.contains(id);
     await _repo.toggleFavorite(id);
@@ -308,9 +295,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ------------------------------------------------------------------
-  //  Interface
-  // ------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -356,10 +340,11 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(10),
             ),
             alignment: Alignment.center,
-            child: const Text('🛒', style: TextStyle(fontSize: 20)),
+            child: const Text('🛍️', style: TextStyle(fontSize: 20)), // EMOJI CHANGÉ
           ),
           const SizedBox(width: 10),
-          const Text('Marché', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          // NOM CHANGÉ ICI
+          const Text('VENDORA', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
         ],
       ),
       actions: [
