@@ -1,4 +1,58 @@
-      - name: Désactiver lintVital (anti-crash)
+name: Build APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter --version
+
+      - name: Créer le dossier android si absent
+        run: |
+          if [ ! -d android ]; then
+            flutter create --platforms=android --project-name market_app --org com.marche .
+          fi
+
+      - name: Autoriser Internet et renommer l'application
+        run: |
+          python3 - <<'PY'
+          import re
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p, encoding='utf-8').read()
+
+          if 'android.permission.INTERNET' not in s:
+              s = s.replace(
+                  '<application',
+                  '<uses-permission android:name="android.permission.INTERNET"/>\n'
+                  '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>\n\n'
+                  '    <application',
+                  1)
+          if 'usesCleartextTraffic' not in s:
+              s = s.replace('<application',
+                            '<application android:usesCleartextTraffic="true"',
+                            1)
+          # Changement du nom de l'application
+          s = s.replace('android:label="market_app"', 'android:label="VENDORA"')
+          open(p, 'w', encoding='utf-8').write(s)
+          PY
+
+      - name: Désactiver lintVital (anti-crash Android)
         run: |
           BUILD_GRADLE=android/app/build.gradle.kts
           if ! grep -q "isCheckReleaseBuilds" "$BUILD_GRADLE"; then
@@ -6,7 +60,7 @@
           p = 'android/app/build.gradle.kts'
           s = open(p, encoding='utf-8').read()
 
-          # Configuration adaptée pour un fichier .kts
+          # Configuration adaptée pour un fichier .kts (Kotlin)
           lint_config = (
               '    lint {\n'
               '        isCheckReleaseBuilds = false\n'
@@ -20,10 +74,33 @@
               insert_pos = idx + len(marker)
               s = s[:insert_pos] + '\n' + lint_config + s[insert_pos:]
               open(p, 'w', encoding='utf-8').write(s)
-              print("✅ Configuration lintVital (kts) ajoutée.")
+              print("✅ Configuration lintVital (kts) ajoutée avec succès.")
           else:
               print("⚠️ Impossible de trouver le bloc 'android {'.")
           PY
           fi
-          echo "=== Contenu de build.gradle.kts (extrait) ==="
-          head -40 "$BUILD_GRADLE"
+
+      - run: flutter pub get
+
+      - name: Générer l'icône de l'application
+        run: |
+          flutter clean
+          flutter pub get
+          dart run flutter_launcher_icons
+
+      - run: flutter build apk --release
+
+      - name: Vérifier permission INTERNET dans l'APK
+        run: |
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          if unzip -p "$APK" AndroidManifest.xml | strings | grep -q "android.permission.INTERNET"; then
+            echo "✅ CONFIRMÉ : INTERNET est bien dans l'APK final."
+          else
+            echo "❌ INTERNET ABSENT de l'APK final !"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vendora-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
