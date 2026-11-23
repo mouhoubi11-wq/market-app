@@ -51,32 +51,10 @@ jobs:
           open(p, 'w', encoding='utf-8').write(s)
           PY
 
-      - name: Désactiver lintVital (anti-crash Android)
+      - name: Désactiver Lint via gradle.properties
         run: |
-          BUILD_GRADLE=android/app/build.gradle.kts
-          if ! grep -q "checkReleaseBuilds" "$BUILD_GRADLE"; then
-            python3 - <<'PY'
-          p = 'android/app/build.gradle.kts'
-          s = open(p, encoding='utf-8').read()
-
-          lint_config = (
-              '    lint {\n'
-              '        checkReleaseBuilds = false\n'
-              '        abortOnError = false\n'
-              '    }\n'
-          )
-
-          marker = 'android {'
-          idx = s.find(marker)
-          if idx != -1:
-              insert_pos = idx + len(marker)
-              s = s[:insert_pos] + '\n' + lint_config + s[insert_pos:]
-              open(p, 'w', encoding='utf-8').write(s)
-              print("✅ Configuration lintVital (kts) ajoutée avec succès.")
-          else:
-              print("⚠️ Impossible de trouver le bloc 'android {'.")
-          PY
-          fi
+          echo "android.lintOptions.checkReleaseBuilds=false" >> android/gradle.properties
+          echo "android.lintOptions.abortOnError=false" >> android/gradle.properties
 
       - run: flutter pub get
 
