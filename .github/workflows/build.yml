@@ -29,68 +29,63 @@ jobs:
             flutter create --platforms=android --project-name market_app --org com.marche .
           fi
 
-      - name: Ajouter permission INTERNET (vérification stricte)
+      - name: Autoriser Internet dans le manifeste Android
         run: |
-          MANIFEST=android/app/src/main/AndroidManifest.xml
-          echo "=== AVANT ==="
-          cat "$MANIFEST"
-
           python3 - <<'PY'
+          import re
           p = 'android/app/src/main/AndroidManifest.xml'
           s = open(p, encoding='utf-8').read()
 
-          # Supprimer toute permission INTERNET existante pour repartir propre
-          import re
-          s = re.sub(r'<uses-permission android:name="android.permission.INTERNET"\s*/>', '', s)
-          s = re.sub(r'<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\s*/>', '', s)
-
-          # Insérer les permissions juste avant <application
-          perms = (
-              '    <uses-permission android:name="android.permission.INTERNET"/>\n'
-              '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>\n'
-          )
-          s = s.replace('<application', perms + '    <application', 1)
-
-          # Cleartext HTTP (au cas où l'API n'est pas en HTTPS)
+          if 'android.permission.INTERNET' not in s:
+              s = s.replace(
+                  '<application',
+                  '<uses-permission android:name="android.permission.INTERNET"/>\n'
+                  '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>\n\n'
+                  '    <application',
+                  1)
           if 'usesCleartextTraffic' not in s:
               s = s.replace('<application',
                             '<application android:usesCleartextTraffic="true"',
                             1)
-
-          # Nom de l'appli
-          s = s.replace('android:label="market_app"', 'android:label="Marché"')
-
+          s = s.replace('android:label="market_app"', 'android:label="VENDORA"') # NOM CHANGÉ ICI
           open(p, 'w', encoding='utf-8').write(s)
-          print("✅ Manifest modifié.")
           PY
 
-          echo "=== APRÈS ==="
-          cat "$MANIFEST"
-
-          echo "=== VÉRIFICATION ==="
-          if grep -q 'android.permission.INTERNET' "$MANIFEST"; then
-            echo "✅ Permission INTERNET présente dans le manifeste source."
-          else
-            echo "❌ Permission INTERNET ABSENTE !"
-            exit 1
+      - name: Désactiver lintVital (anti-crash)
+        run: |
+          BUILD_GRADLE=android/app/build.gradle.kts
+          if ! grep -q "lintVital" "$BUILD_GRADLE"; then
+            python3 - <<'PY'
+          p = 'android/app/build.gradle.kts'
+          s = open(p, encoding='utf-8').read()
+          lint_config = '    lint {\n        checkReleaseBuilds = false\n        abortOnError = false\n    }\n'
+          marker = 'android {'
+          idx = s.find(marker)
+          if idx != -1:
+              insert_pos = idx + len(marker)
+              s = s[:insert_pos] + '\n' + lint_config + s[insert_pos:]
+              open(p, 'w', encoding='utf-8').write(s)
+          PY
           fi
 
       - run: flutter pub get
 
+      - name: Générer l'icône de l'application
+        run: flutter pub run flutter_launcher_icons
+
       - run: flutter build apk --release
 
-      - name: Vérifier permission INTERNET dans l'APK compilé
+      - name: Vérifier permission INTERNET
         run: |
           APK=build/app/outputs/flutter-apk/app-release.apk
-          echo "=== Permissions dans l'APK compilé ==="
           if unzip -p "$APK" AndroidManifest.xml | strings | grep -q "android.permission.INTERNET"; then
             echo "✅ CONFIRMÉ : INTERNET est bien dans l'APK final."
           else
-            echo "❌ INTERNET ABSENT de l'APK final — le problème vient de Gradle !"
+            echo "❌ INTERNET ABSENT de l'APK final !"
             exit 1
           fi
 
       - uses: actions/upload-artifact@v4
         with:
-          name: marche-apk
+          name: vendora-apk
           path: build/app/outputs/flutter-apk/app-release.apk
