@@ -47,7 +47,6 @@ jobs:
               s = s.replace('<application',
                             '<application android:usesCleartextTraffic="true"',
                             1)
-          # Changement du nom de l'application
           s = s.replace('android:label="market_app"', 'android:label="VENDORA"')
           open(p, 'w', encoding='utf-8').write(s)
           PY
@@ -55,15 +54,14 @@ jobs:
       - name: Désactiver lintVital (anti-crash Android)
         run: |
           BUILD_GRADLE=android/app/build.gradle.kts
-          if ! grep -q "isCheckReleaseBuilds" "$BUILD_GRADLE"; then
+          if ! grep -q "checkReleaseBuilds" "$BUILD_GRADLE"; then
             python3 - <<'PY'
           p = 'android/app/build.gradle.kts'
           s = open(p, encoding='utf-8').read()
 
-          # Configuration adaptée pour un fichier .kts (Kotlin)
           lint_config = (
               '    lint {\n'
-              '        isCheckReleaseBuilds = false\n'
+              '        checkReleaseBuilds = false\n'
               '        abortOnError = false\n'
               '    }\n'
           )
