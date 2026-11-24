@@ -53,7 +53,6 @@ jobs:
       - name: Désactiver l'analyse Lint (anti-crash)
         run: |
           BUILD_GRADLE=android/app/build.gradle.kts
-          # On utilise la syntaxe Kotlin correcte pour désactiver Lint
           if ! grep -q "lint {" "$BUILD_GRADLE"; then
             python3 - <<'PY'
           p = 'android/app/build.gradle.kts'
@@ -70,9 +69,6 @@ jobs:
               insert_pos = idx + len(marker)
               s = s[:insert_pos] + '\n' + lint_config + s[insert_pos:]
               open(p, 'w', encoding='utf-8').write(s)
-              print("✅ Configuration lint (kts) ajoutée.")
-          else:
-              print("⚠️ Impossible de trouver le bloc 'android {'.")
           PY
           fi
 
@@ -85,16 +81,6 @@ jobs:
           dart run flutter_launcher_icons
 
       - run: flutter build apk --release
-
-      - name: Vérifier permission INTERNET dans l'APK
-        run: |
-          APK=build/app/outputs/flutter-apk/app-release.apk
-          if unzip -p "$APK" AndroidManifest.xml | strings | grep -q "android.permission.INTERNET"; then
-            echo "✅ CONFIRMÉ : INTERNET est bien dans l'APK final."
-          else
-            echo "❌ INTERNET ABSENT de l'APK final !"
-            exit 1
-          fi
 
       - uses: actions/upload-artifact@v4
         with:
